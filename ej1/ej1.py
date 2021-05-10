@@ -56,7 +56,7 @@ class Sumador(Elaboratable):
         with m.If(self.r.accepted()):
             sync += self.r.valid.eq(0)
 
-        with m.If(self.a.accepted()):
+        with m.If(self.a.accepted() & self.b.accepted()):
             sync += [
                 self.r.valid.eq(1),
                 self.r.data.eq(self.a.data + self.b.data)
@@ -88,8 +88,9 @@ async def burst(dut):
 
     data_a = [getrandbits(width) for _ in range(N)]
     data_b = [getrandbits(width) for _ in range(N)]
-    expected = [(data_a[i] + data_b[i]) & mask for i in range(len(data))]
-    cocotb.fork(stream_inputa.send(data_a),stream_inputb.send(data_b))
+    expected = [(data_a[i] + data_b[i]) & mask for i in range(N)]
+    cocotb.fork(stream_inputa.send(data_a))
+    cocotb.fork(stream_inputb.send(data_b))
     recved = await stream_output.recv(N)
     assert recved == expected
 
@@ -101,7 +102,8 @@ if __name__ == '__main__':
         ports=
         [
             *list(core.a.fields.values()),
+            *list(core.b.fields.values()),
             *list(core.r.fields.values())
         ],
-        vcd_file='incrementador.vcd'
+        vcd_file='sumador.vcd'
     )
